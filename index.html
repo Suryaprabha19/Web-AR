@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- A-Frame -->
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+
+  <!-- aframe-ar -->
+  <script src="./aframe-ar-main/dist/aframe-ar.min.js"></script>
+
+  <!-- Animation Mixer -->
+  <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
+
+  <title>AR Animated Placement</title>
+</head>
+
+<body>
+
+<script>
+  function showMessage(message){
+    let hud = document.querySelector("#hud");
+    if(hud) hud.setAttribute('value', message);
+  }
+
+  AFRAME.registerComponent('ar-logic', {
+    init: function(){
+      showMessage('AR Ready...');
+    },
+
+    tick: function(){
+      let cam = document.querySelector("#cam");
+      let circle = document.querySelector("#circle");
+
+      if(!cam || !cam.components.raycaster || !circle){
+        return;
+      }
+
+      let intersection = cam.components.raycaster.getIntersection(circle);
+
+      if(intersection){
+        circle.setAttribute("position", intersection.point);
+        circle.setAttribute("color", "lime");
+
+        showMessage(
+          "Detected: " + 
+          intersection.point.x.toFixed(2) + ", " + 
+          intersection.point.z.toFixed(2)
+        );
+      } else {
+        circle.setAttribute("color", "red");
+        showMessage("Searching surface...");
+      }
+    }
+  });
+
+  // Tap interaction
+  window.addEventListener("touchstart", function(){
+    let box = document.querySelector("#box");
+    let circle = document.querySelector("#circle");
+
+    if(!box || !circle) return;
+
+    let pos = circle.getAttribute("position");
+
+    // Move robot
+    box.setAttribute("position", pos);
+
+    // 🔥 Change animation on tap
+    box.setAttribute("animation-mixer", "clip: Walking");
+  });
+
+</script>
+
+<a-scene ar ar-logic>
+
+  <!-- Camera -->
+  <a-camera 
+    id="cam" 
+    ar-raycaster 
+    raycaster="objects: #circle;">
+
+    <a-text 
+      id="hud"
+      value="Starting..."
+      position="0 -0.1 -0.25"
+      align="center">
+    </a-text>
+
+  </a-camera>
+
+  <!-- 🔵 Reticle -->
+  <a-ring
+    id="circle"
+    rotation="-90 0 0"
+    radius-inner="0.03"
+    radius-outer="0.05"
+    color="red"
+    material="shader: flat; opacity: 0.8;"
+    animation="property: rotation; to: 0 360 0; loop: true; dur: 2000"
+    animation__pulse="
+      property: scale;
+      dir: alternate;
+      dur: 500;
+      loop: true;
+      to: 1.2 1.2 1.2">
+  </a-ring>
+
+  <!-- 🤖 Animated Robot -->
+  <a-gltf-model
+    id="box"
+    src="model/robot_playground.glb"
+    position="0 0 -1"
+    scale="0.8 0.8 0.8"
+    animation-mixer="clip: Idle">
+  </a-gltf-model>
+
+</a-scene>
+
+</body>
+</html>
